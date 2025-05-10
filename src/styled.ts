@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import Template from './assets/template.svg';
-import TemplateBelt from './assets/template-belt.svg';
+import TemplateBelt from './assets/aaaaaaa.svg';
 
 export const BeltContainer = styled.div`
   width: 100vw;
@@ -12,6 +12,14 @@ export const Belt = styled.div`
   height: 4rem;
   width: 100vw;
   background: repeat url(${TemplateBelt});
+
+  @media (max-height: 630px) {
+    max-height: 3rem;
+  }
+
+  @media (max-height: 470px) {
+    max-height: 2rem;
+  }
 `;
 
 export const AppContainer = styled.div`
@@ -28,20 +36,18 @@ export const AppContainer = styled.div`
 
 export const DataContainer = styled.div`
   display: flex;
-  width: 50vw;
-  height: 80%;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
-  gap: 5%;
-  padding: 10%;
+  max-width: 1536px;
+  height: 80%;
 `;
 
 export const CardsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
   position: relative;
   width: 100%;
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 5%;
+  gap: 2rem;
 `;
