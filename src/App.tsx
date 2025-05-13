@@ -9,11 +9,10 @@ import {
 } from './styled';
 import {
   formatFrom24To12,
-  formatFrom24ToDate,
   formatTime,
-  formatToApiDate,
 } from './utils/date';
-import { ApiRequest, useGetPrayerTimes } from './hooks/queries/prayers';
+import { ApiRequest, Timings } from './hooks/queries/usePrayer';
+import { useNextPrayer } from './hooks/custom/useNextPrayer';
 
 const initialApiData: ApiRequest = {
   latitude: 0,
@@ -24,90 +23,17 @@ const initialApiData: ApiRequest = {
   calendarMethod: 'UAQ',
 };
 
-type ImportantPrayers = 'Fajr' | 'Maghrib' | 'Isha' | "Tomorrow's Fajr";
-
 function App() {
   const [apiState, setApiState] = useState<ApiRequest>(initialApiData);
-  const [enabled, setEnabled] = useState<boolean>(false);
+  const [enabled, setEnabled] = useState(false);
 
-  const [nextPrayer, setNextPrayer] = useState<ImportantPrayers | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
-  const [nextPrayerTime, setNextPrayerTime] = useState<Date | null>(null);
-
-  const { data: prayerTimesToday, refetch: refetchToday } = useGetPrayerTimes(
-    enabled,
-    formatToApiDate(0),
-    apiState
-  );
-
-  const { data: prayerTimesTomorrow, refetch: refetchTomorrow } =
-    useGetPrayerTimes(enabled, formatToApiDate(1), apiState);
-
-  useEffect(() => {
-    if (!prayerTimesToday || !prayerTimesTomorrow) return;
-
-    const now = new Date();
-    const prayers = [
-      { name: 'Fajr', time: formatFrom24ToDate(prayerTimesToday.Fajr) },
-      { name: 'Maghrib', time: formatFrom24ToDate(prayerTimesToday.Maghrib) },
-      { name: 'Isha', time: formatFrom24ToDate(prayerTimesToday.Isha) },
-      {
-        name: "Tomorrow's Fajr",
-        time: formatFrom24ToDate(prayerTimesTomorrow.Fajr, 1),
-      },
-    ];
-
-    const upcoming = prayers.find((prayer) => prayer.time > now);
-    if (upcoming) {
-      setNextPrayer(upcoming.name as ImportantPrayers);
-      setNextPrayerTime(upcoming.time);
-    }
-  }, [prayerTimesToday, prayerTimesTomorrow]);
-
-  useEffect(() => {
-    if (!nextPrayerTime) return;
-
-    const updateRemaining = () => {
-      const now = new Date();
-      const remaining = nextPrayerTime.getTime() - now.getTime();
-      setTimeRemaining(remaining > 0 ? remaining : 0);
-    };
-
-    updateRemaining();
-    const interval = setInterval(updateRemaining, 1000);
-
-    return () => clearInterval(interval);
-  }, [nextPrayerTime]);
-
-  useEffect(() => {
-    const now = new Date();
-    const msUntilMidnight =
-      new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() -
-      now.getTime();
-
-    const timeout = setTimeout(() => {
-      refetchToday();
-      refetchTomorrow();
-
-      // Set up daily interval after the first midnight update
-      setInterval(
-        () => {
-          refetchToday();
-          refetchTomorrow();
-        },
-        24 * 60 * 60 * 1000
-      ); // every 24 hours
-    }, msUntilMidnight);
-
-    return () => clearTimeout(timeout);
-  }, []);
+  const { today, tomorrow, nextPrayer, timeRemaining } = useNextPrayer(apiState, enabled);
 
   useEffect(() => {
     const getLocation = async () => {
       try {
-        const position = await new Promise<GeolocationPosition>(
-          (resolve, reject) =>
-            navigator.geolocation.getCurrentPosition(resolve, reject)
+        const position = await new Promise<GeolocationPosition>((resolve, reject) =>
+          navigator.geolocation.getCurrentPosition(resolve, reject)
         );
 
         setApiState((prev) => ({
@@ -125,40 +51,23 @@ function App() {
     getLocation();
   }, []);
 
-  return prayerTimesToday && prayerTimesTomorrow && timeRemaining ? (
+  return today && tomorrow && timeRemaining !== null ? (
     <AppContainer>
       <DataContainer>
         <h1>My Iftar</h1>
         <CardsContainer>
-          <Card
-            title='Fajr'
-            titleValue={formatFrom24To12(prayerTimesToday.Fajr)}
-            remaining={
-              nextPrayer === 'Fajr' ? formatTime(timeRemaining) : undefined
-            }
-          />
-          <Card
-            title='Maghrib'
-            titleValue={formatFrom24To12(prayerTimesToday.Maghrib)}
-            remaining={
-              nextPrayer === 'Maghrib' ? formatTime(timeRemaining) : undefined
-            }
-          />
-          <Card
-            title='Isha'
-            titleValue={formatFrom24To12(prayerTimesToday.Isha)}
-            remaining={
-              nextPrayer === 'Isha' ? formatTime(timeRemaining) : undefined
-            }
-          />
+          {['Fajr', 'Maghrib', 'Isha'].map((prayer) => (
+            <Card
+              key={prayer}
+              title={prayer}
+              titleValue={formatFrom24To12(today[prayer as keyof Timings])}
+              remaining={nextPrayer === prayer ? formatTime(timeRemaining) : undefined}
+            />
+          ))}
           <Card
             title="Tomorrow's Fajr"
-            titleValue={formatFrom24To12(prayerTimesTomorrow.Fajr)}
-            remaining={
-              nextPrayer === "Tomorrow's Fajr"
-                ? formatTime(timeRemaining)
-                : undefined
-            }
+            titleValue={formatFrom24To12(tomorrow.Fajr)}
+            remaining={nextPrayer === "Tomorrow's Fajr" ? formatTime(timeRemaining) : undefined}
           />
         </CardsContainer>
       </DataContainer>
