@@ -15,6 +15,7 @@ type ApiStatus = {
   code: number;
   status: string;
 };
+
 export type Timings = {
   Fajr: string;
   Sunrise: string;
@@ -25,6 +26,7 @@ export type Timings = {
   Isha: string;
 };
 
+// TODO: For v2
 type ApiResponse = ApiStatus & {
   data: {
     timings: Timings;

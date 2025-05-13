@@ -1,21 +1,34 @@
 import { CSSProperties } from 'react';
-import { CardContainer, CardData, CardSubTitle, CardTitle } from './styled';
+import {
+  CardContainer,
+  CardData,
+  CardSubTitle,
+  CardTitle,
+  GradientBorderBox,
+} from './styled';
 
 type CardProps = {
   title: string;
   titleValue: string;
-  remaining?: number;
-  focus?: boolean;
-  style?: CSSProperties
+  remaining?: string;
+  style?: CSSProperties;
 };
 
-const Card = ({ title, titleValue, remaining, focus, style }: CardProps) => {
-  return (
-    <CardContainer focus={focus} style={style}>
+const Card = ({ title, titleValue, remaining, style }: CardProps) => {
+  const isFocused = Boolean(remaining);
+
+  const cardContent = (
+    <CardContainer $focus={isFocused} style={style}>
       <CardTitle>{title}</CardTitle>
-      <CardSubTitle>{titleValue}</CardSubTitle>
-      <CardData>Remaining 40:30</CardData>
+      <CardSubTitle $focus={isFocused}>{titleValue}</CardSubTitle>
+      {isFocused && <CardData>{remaining}</CardData>}
     </CardContainer>
+  );
+
+  return isFocused ? (
+    <GradientBorderBox>{cardContent}</GradientBorderBox>
+  ) : (
+    cardContent
   );
 };
 
